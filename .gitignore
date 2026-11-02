@@ -22,3 +22,4 @@ draft-webbotauth-meunier-brian.xml
 package-lock.json
 report.xml
 !requirements.txt
+/.review/

@@ -1,31 +1,34 @@
-<!-- regenerate: on (set to off if you edit this file) -->
+<!-- regenerate: off -->
 
-# Bot rate limit is all you need
+# Brian: anonymous client rate limiting
 
-This is the working area for the individual Internet-Draft, "Bot rate limit is all you need".
+Working draft of a MoLE-based approach to limiting clients behind shared
+intermediaries without requiring stable client identifiers at origins.
+This is an unpublished editor's copy being developed toward an individual -00.
 
-* [Editor's Copy](https://thibmeu.github.io/draft-brian/#go.draft-webbotauth-meunier-brian.html)
-* [Datatracker Page](https://datatracker.ietf.org/doc/draft-webbotauth-meunier-brian)
-* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-webbotauth-meunier-brian)
-* [Compare Editor's Copy to Individual Draft](https://thibmeu.github.io/draft-brian/#go.draft-webbotauth-meunier-brian.diff)
+- [Editor's copy](https://thibmeu.github.io/draft-brian/draft-webbotauth-meunier-brian.html)
+- [Contributing](CONTRIBUTING.md)
+- [Draft source](draft-webbotauth-meunier-brian.md)
 
+## Build locally
 
-## Contributing
-
-See the
-[guidelines for contributions](https://github.com/thibmeu/draft-brian/blob//CONTRIBUTING.md).
-
-The contributing file also has tips on how to make contributions, if you
-don't already know how to do that.
-
-## Command Line Usage
-
-Formatted text and HTML versions of the draft can be built using `make`.
+Install Git, GNU Make, Python 3 with pip and venv, Ruby with Bundler, and Node.js
+with npm. Then run:
 
 ```sh
-$ make
+make deps
+make
 ```
 
-Command line usage requires that you have the necessary software installed.  See
-[the instructions](https://github.com/martinthomson/i-d-template/blob/main/doc/SETUP.md).
+The Makefile fetches [i-d-template](https://github.com/martinthomson/i-d-template)
+into `lib/` and installs its Python and Ruby tools there. The diagram dependency
+is installed into `node_modules/`. The first build needs network access for tools
+and bibliography entries.
 
+The build produces `draft-webbotauth-meunier-brian.html` and
+`draft-webbotauth-meunier-brian.txt`. Generated files and local review references
+under `.review/` are ignored by Git.
+
+Building locally does not publish the draft. The inherited GitHub workflows can
+publish an editor's copy on pushes and submit a draft on `draft-*` tags or a
+manual publish-workflow run.
