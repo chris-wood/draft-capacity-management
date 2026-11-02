@@ -3,7 +3,7 @@ title: "Bot rate limit is all you need"
 abbrev: "Brian"
 category: info
 
-docname: draft-webbotauth-meunier-brian-latest
+docname: draft-meunier-webbotauth-brian-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -19,7 +19,7 @@ venue:
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-brian"
-  latest: "https://thibmeu.github.io/draft-brian/draft-webbotauth-meunier-brian.html"
+  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-brian.html"
 
 author:
  -
@@ -37,8 +37,8 @@ informative:
   HTTP: RFC9110
   INTERNET-FOR-END-USER: RFC8890
   IPv6: RFC8200
-  MOLE-ARCH: I-D.draft-jms-mole-architecture
-  MOLE-PROTOCOLS: I-D.draft-jms-mole-protocols
+  MOLE-ARCH: I-D.draft-jms-MOLE-architecture
+  MOLE-PROTOCOLS: I-D.draft-jms-MOLE-protocols
   OAUTH-XAA: I-D.draft-ietf-oauth-identity-assertion-authz-grant
   POPPY:
     title: "Personal Agent Protocol, draft 0.3"
@@ -57,11 +57,14 @@ informative:
 
 --- abstract
 
-This document describes a profile of {{MOLE-ARCH}} that allows for rate limiting
-of clients. The goal is to allow clients to provide information that sites can
-use to apply rate-limit policies without requiring a stable identifier.
-Providers endorse their clients, while sites apply anonymous client limits.
-{{WBA-HTTPSIG}} can identify intermediaries for separate aggregate limits.
+Sites rate limit clients by address or by the intermediary they come through.
+Behind a shared intermediary, such as an AI agent platform, a VPN, or a network
+operator, every client then shares the same fate. This document describes the
+problem of limiting individual clients without requiring a stable identifier,
+and sketches a direction built on {{MOLE-ARCH}}: providers endorse their
+clients, and sites apply anonymous per-client limits. {{WBA-HTTPSIG}} can
+identify intermediaries for separate aggregate limits. It is a companion to
+{{WBA-ABA}}.
 
 --- middle
 
@@ -113,15 +116,15 @@ the user is.
    an address range or an entire ASN give these users a shared fate.
 3. VPN providers and enterprise ZTNA gateways have a noisy neighbour problem.
    They may know their users, but should not have to expose them to each origin.
-   Think of being able to trace requests from a CFO before earnings.
+   An origin able to tell employees apart could single out an executive's
+   activity for instance.
 
-This draft presents an instantiation built on {{MOLE-ARCH}} and how that
-composes with {{WBA-HTTPSIG}}. It shares the anonymous rate-limiting goal of
-{{WBA-ABA}}. Clients should remain unlinkable through the protocol, even within
-the same rate-limit window. Cookies or TLS session tickets can still link
-requests independently of MOLE.
+## Related work
 
-## Non use cases
+{{WBA-ABA}} shares the anonymous rate-limiting goal and the MOLE construction.
+This document is a companion to it. It focuses on providers that already have
+a relationship with their users, and on composing with an intermediary's
+{{WBA-HTTPSIG}} identity.
 
 Poppy {{POPPY}} uses User IDs and sessions, including for anonymous browsing.
 {{AAP}} uses anonymous admission tokens and recommends a session afterwards,
@@ -129,13 +132,10 @@ though it also allows a fresh token per request. Here, the aim is to maintain a
 client budget without linking its presentations.
 
 MOLE will not solve every use case served by identifiers. Identity is still
-useful, and a story has to be found as to when it is required. Both MOLE and
-identity should be provided willingly by the client and by design.
-
+useful when an application needs it. Both MOLE and identity should be provided
+willingly by the client.
 
 # Conventions and Definitions
-
-{::boilerplate bcp14-tagged}
 
 We use the vocabulary and terminology from {{MOLE-ARCH}}.
 
@@ -148,10 +148,9 @@ that Credential as it makes requests. The origin can apply a client rate limit
 or spendable budget. Where an intermediary identifies its forwarded traffic
 with Web Bot Auth, the origin can also limit that traffic in aggregate.
 
-One requirement is an Endorsement that supports late binding, such as the
-Longfellow approach in {{MOLE-PROTOCOLS}}. The Client can request a Credential
-from an accepting Moderator without returning to the Anchor for each
-redemption.
+The two limits protect against different parties. The aggregate limit protects
+the origin from a dishonest provider, which controls how many Endorsements
+exist. The client limit gives fairness among an honest provider's users.
 
 ~~~aasvg
                         +------------------+
@@ -204,10 +203,13 @@ through Web Bot Auth or its egress address.
 ~~~
 {: #multiple-providers title="An external Client and a hosted Client reaching the same origin"}
 
-\[\[ Editor's note: The issuance policy, budget updates, and late-binding details
-remain to be worked out. In particular, the same user could obtain Endorsements
-from two providers. We rely on their existing client relationships to make
-Endorsements scarce, but have not yet specified that assumption. \]\]
+\[\[ Editor's note: Open points include:
+
+* Concurrent requests: one Credential cannot be used in parallel. One option is
+  to issue several Credentials that split the budget.
+* Tunnels such as VPNs cannot add a Web Bot Auth signature today.
+* Scarcity: the same user could obtain Endorsements from two providers.
+  \]\]
 
 # Security Considerations {#security}
 
