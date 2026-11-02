@@ -9,17 +9,17 @@ number:
 date:
 consensus: true
 v: 3
-area: "Web and Internet Transport"
-workgroup: "Web Bot Auth"
+# area: "Web and Internet Transport"
+# workgroup: "Web Bot Auth"
 keyword:
  - not-yet
 venue:
-  group: "Web Bot Auth"
-  type: "Working Group"
-  mail: "web-bot-auth@ietf.org"
-  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
+#  group: "Web Bot Auth"
+#  type: "Working Group"
+#  mail: "web-bot-auth@ietf.org"
+#  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-brian"
-  latest: https://thibmeu.github.io/draft-brian/draft-webbotauth-meunier-brian.html
+  latest: "https://thibmeu.github.io/draft-brian/draft-webbotauth-meunier-brian.html"
 
 author:
  -
@@ -29,7 +29,7 @@ author:
 
 normative:
 
-informative: 
+informative:
   MOLE-ARCH: I-D.draft-jms-mole-architecture
   WBA-ABA: I-D.draft-ietf-webbotauth-httpsig-protocol
   WBA-HTTPSIG: I-D.draft-rescorla-anonymous-webbotauth
