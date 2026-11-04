@@ -1,9 +1,9 @@
 ---
-title: "Anonymous Presentation for Proportionate Access"
-abbrev: "APPA"
+title: "Proportionate Access and Capacity Enforcement"
+abbrev: "PACE"
 category: info
 
-docname: draft-meunier-webbotauth-appa-latest
+docname: draft-meunier-webbotauth-pace-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -19,7 +19,7 @@ venue:
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-brian"
-  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-appa.html"
+  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-pace.html"
 
 author:
  -
