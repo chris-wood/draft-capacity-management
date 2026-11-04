@@ -26,6 +26,10 @@ author:
     fullname: Thibault Meunier
     organization: Cloudflare
     email: ot-ietf@thibault.uk
+ -
+    fullname: Christopher A. Wood
+    organization: Cloudflare
+    email: caw@heapingbits.net
 
 normative:
 
