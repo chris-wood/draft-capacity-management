@@ -30,6 +30,7 @@ author:
 normative:
 
 informative:
+  CIVIL: I-D.draft-meunier-bcp-civil
   AAUTH: I-D.draft-hardt-oauth-aauth-protocol
   CONNECT-UDP: RFC9298
   CONNECT-IP: RFC9484
@@ -265,6 +266,11 @@ may be heavily rate limited and remains subject to available capacity and
 request behavior. Scarce endorsements can support access above that floor.
 Here, zero disclosure means no additional authentication signal. Ordinary
 HTTP and network metadata remain visible.
+
+This follows the guidance in {{Section 3.4 of CIVIL}}: "Absence of an active
+signal does not itself establish abuse." Anonymous budgets and platform
+signatures provide active signals for graduated enforcement while preserving
+that baseline access.
 
 Privacy partitioning {{PRIVACY-PARTITIONING}} provides the framing: separate
 knowledge of who a user is from knowledge of what they do. An Anchor can use
