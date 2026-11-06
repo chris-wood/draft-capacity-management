@@ -83,13 +83,13 @@ informative:
 
 Origins often limit requests by address or by the platform carrying them.
 Clients behind shared infrastructure then share the consequences of one
-another's activity. Finer-grained identifiers can narrow that shared fate,
-but let origins link requests when all they need is to bound consumption.
-This document sketches independently allocated budgets that avoid stable
-Client identifiers. It describes how MOLE credentials preserve budget
-continuity across unlinkable presentations, how carrier attribution supports
-aggregate limits, and where composition with resource authorization needs
-further work.
+another's activity. Signed product, project, or session identifiers can
+narrow that shared fate, but also let origins link requests. When the goal
+is only to bound consumption, such identifiers need not be disclosed: this
+document sketches independently allocated, scarce budgets instead. It
+describes how MOLE credentials preserve budget continuity across unlinkable
+presentations, how carrier attribution supports aggregate limits, and where
+composition with resource authorization needs further work.
 
 --- middle
 
@@ -124,32 +124,40 @@ tenants. {{SIGNED-AGENT-METADATA}} describes this problem and proposes
 signed product, project, and session identifiers to let an origin isolate
 traffic below the platform level.
 
-More granular identifiers are useful when the origin needs to attribute
-activity to a specific principal that's identified. However, they come at
-a number of costs:
+More granular identifiers are useful when the origin needs to recognize a
+particular product or project, investigate abuse with its platform, or follow
+a task within a session. {{SIGNED-AGENT-METADATA}} advocates for such
+identifiers. While they are pseudonymous, the receiving origin can link
+requests within the context of such identifiers. This has two immediate
+costs:
 
 - Discriminatory treatment: Explicit identifiers allow for discriminatory
-treatment of traffic based on those identifiers. This could be used for
-the purposes of giving preferential or treatment to some traffic over others,
-such as by blocking certain types of traffic depending on their requests.
+  treatment of traffic based on those identifiers. This could be used for
+  the purposes of giving preferential treatment to some traffic over others,
+  such as by blocking certain types of traffic depending on their requests.
 - Privacy: Explicit identifiers allow for linking traffic to that identifier.
-The more granular the identifier, the more precise of a profile this linkability
-offers.
+  The more granular the identifier, the more precise of a profile this
+  linkability offers.
 
 This presents natural tension between the needs of an origin and the needs
-of an agent. Identifiers are sufficient for enforcing capacity and abuse 
+of an agent. Identifiers are sufficient for enforcing capacity and abuse
 control on the granularity of the identifiers provided, but identifiers can
-lead to harmful outcomes for agents.
+lead to harmful outcomes for agents. An origin needs to distinguish abusive
+from acceptable behavior, but does not always need a persistent handle on
+the party behind it.
 
-This document discusses the framework of Anonymous Agent Authentication (AAA).
-AAA navigates this tension using MOLE (Moderation of unLinkable Endorsements),
-an emerging technology for private rate limiting {{MOLE-ARCH}}. The goal of AAA
-is to let origins bound consumption on a per-principal -- typically a per-agent
--- basis without making disclosure of the principal a condition of access,
-and without forcing the origin to inadvertently harm other agents in the case
-of intermediation.
+If the origin's goal is only to bound each consumption to products, projects,
+or platforms, identifiers are not strictly necessary.
+This document describes Anonymous Agent Authentication (AAA) using MOLE
+(Moderation of unLinkable Endorsements), an architecture for private
+moderation {{MOLE-ARCH}}. Separately allocated budgets can keep one Client's
+spending from exhausting another's allocation behind shared infrastructure.
+This requires Anchor policies that constrain issuance and Moderator policies
+that charge and replenish balances; MOLE alone does not ensure one budget
+per agent or enforce a per-agent rate over time. Public access need not be
+conditioned on disclosure of a stable identifier.
 
-Such a mechanism is useful in a number of cases. Consider the following:
+Such a mechanism is useful in a number of cases. Some examples follow:
 
 1. An AI agent service that hosts remote agents and concentrate their traffic
    on a small set of IP addresses. One user's activity can affect others when
@@ -167,21 +175,24 @@ Such a mechanism is useful in a number of cases. Consider the following:
 {{SIGNED-AGENT-METADATA}} addresses shared fate under a platform's Web Bot
 Auth signature with signed, pseudonymous sub-identifiers. It lets an origin
 apply policy to a product, project, or session while the platform can map
-those identifiers back to its customers. This is useful for attribution and
-investigation, but the identifiers remain linkable to the origin for their
-lifetimes. MOLE serves the case where the origin needs a scarce budget
-without such a handle; it does not provide the same tenant-specific abuse
-reporting to a platform.
+those identifiers back to its customers. Origin-scoped session values
+reduce cross-origin correlation ({{Section 7.2 of SIGNED-AGENT-METADATA}}),
+but each identifier still links requests within its own scope and lifetime.
+MOLE serves the case where the origin needs a scarce budget without such a
+handle; it does not provide the same tenant-specific abuse reporting or
+targeted blocking of an identified project.
 
-{{WBA-ABA}} shares the anonymous rate-limiting goal and the MOLE construction.
-This document is a companion to it. It focuses on platforms that already have
-a relationship with their users, and on composing with a platform's
-{{WBA-HTTPSIG}} identity.
+{{WBA-ABA}} also uses MOLE for anonymous bot access and rate limiting.
+This document focuses on the shared-fate problem beneath a platform's
+{{WBA-HTTPSIG}} identity: scarce budgets can isolate consumption without
+asking the platform to expose product, project, or session identifiers for
+that purpose. It does not replace signed metadata where the origin needs
+to attribute activity to one of those units.
 
 Poppy {{POPPY}} uses User IDs and sessions, including for anonymous browsing.
 {{AAP}} uses anonymous admission tokens and recommends a session afterwards,
 though it also allows a fresh token per request. Here, the aim is to maintain a
-per-agent budget without linking its presentations.
+scarce, independently allocated budget without linking its presentations.
 
 {{WIMSE-AIMS}} profiles WIMSE and OAuth for agents. It treats an agent as a
 workload with its own identifier and credential, and carries the user, when
@@ -222,29 +233,30 @@ not establish a unique account, workload, device, or other principal.
 
 MOLE(X) denotes a presentation for budget scope X. MOLE(C) is a Client's
 budget, while MOLE(T), MOLE(W), and MOLE(U) denote tenant, workload, and
-agent scopes. These labels do not appear as identifiers in presentations.
-WBA(Y) denotes a Web Bot Auth signature from intermediary Y. 
+account scopes. These labels do not appear as identifiers in presentations.
+WBA(Y) denotes a Web Bot Auth signature from intermediary Y.
 
 # Scope and principles {#principles}
 
 The aim of AAA is to bound consumption through independently allocated budgets
 without requiring a stable client identifier. Exhausting one budget should
-not exhaust an unrelated budget. The privacy objective is to separate the
-relationship used to obtain a budget from the requests that spend it
-{{PRIVACY-PARTITIONING}}. Enforcement still depends on constrained
-issuance and available capacity. A platform aggregate limit can affect every
-client behind it even when their individual budgets remain usable.
+not exhaust another allocation, provided Anchor issuance and Moderator
+spending policies keep them separate. The privacy objective is to separate
+the relationship used to obtain a budget from the requests that spend it
+{{PRIVACY-PARTITIONING}}. A platform aggregate limit can still affect every
+Client behind it even when their individual budgets remain usable.
 
 For public resources, the deployment goal is a baseline level of access
 without a credential or signature. This baseline remains subject to capacity
 and request behavior. Scarce Endorsements can support access above it.
 Absence of an active signal does not itself establish abuse {{CIVIL}}.
 
-Permissioned resources may require authorization before serving any content.
-Naturally, authorization ("is the entity allowed to do this?") requires
-some mechanism for authenticating ("who is the entity?"), and so in such
-cases it is wholly appropriate for agents to authenticate with stable
-identifiers.
+Permissioned resources may require evidence of a right before serving any
+content. A capability can establish that right without identifying its
+holder. Where a resource's policy depends on a particular principal and
+its permissions, authenticating the principal with a stable identifier is
+appropriate. Capacity evidence alone establishes neither identity nor a
+right to perform a permissioned operation.
 
 Clients choose which evidence to offer. Origins should ask only for evidence
 needed by the requested operation. A verified identity does not establish that
@@ -325,9 +337,8 @@ of several budgets or of a budget beside another authorization scheme remains
 undefined here.
 
 WWW-Authenticate can carry several challenges, but that alone does not express
-that all must be satisfied. Signaling cumulative requirements is also open.
-The permissioned flow in {{flow2}} marks this boundary rather than specifying
-an encoding.
+that all must be satisfied. Signaling cumulative requirements is also open;
+this document does not specify the permissioned flow or its encoding.
 
 # Moderating consumption {#processing-steps}
 
