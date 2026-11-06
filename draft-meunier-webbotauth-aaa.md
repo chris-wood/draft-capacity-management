@@ -425,10 +425,12 @@ A failed presentation does not authorize the budgeted level of access.
 
 # Deployment considerations {#examples}
 
-An endorsement relationship is independent of the traffic path. In
-{{fig-intermediary}}, the Anchor endorses Client C while
-intermediary P carries its requests. The same provider can operate both roles.
-A tunnel carrying end-to-end TLS cannot add an HTTP signature.
+Deployment separates two kinds of capacity control: an intermediary can
+identify itself for an aggregate limit, while an Anchor allocates scarce
+Endorsements for smaller, anonymous budgets. {{fig-intermediary}} shows the
+Anchor endorsing Client C while intermediary P carries its requests. The
+same provider can operate both roles, but need not. A tunnel carrying
+end-to-end TLS cannot add an HTTP signature.
 
 ~~~aasvg
 +----------+
@@ -444,7 +446,81 @@ A tunnel carrying end-to-end TLS cannot add an HTTP signature.
 ~~~
 {: #fig-intermediary title="Separate endorsement and forwarding relationships"}
 
-## Budget scopes
+The origin can attribute the forwarded request to P through WBA(P) and
+charge C's separate budget through MOLE(C), without learning C's identity
+from that presentation. The allocation relationship, rather than P's
+signature, establishes which smaller unit bears the spend. The following
+subsection applies this separation to product, project, and session
+capacity limits.
+
+## Capacity without identifiers
+
+Signed product, project, and session IDs give an origin visible keys with which
+to keep separate counters {{SIGNED-AGENT-METADATA}}. For capacity alone, the
+Anchor can constrain Endorsements per product, project, or task allocation
+only if it knows and enforces those boundaries. The platform can play this
+role; an independent Anchor needs a way to account for the same allocations,
+or its Endorsements cannot enforce the platform's project and product totals.
+
+Clients redeem those endorsements for independent MOLE credentials and
+spend the credentials on requests. The Moderator checks
+each spend and carries the remaining balance into an unlinkable
+replacement Credential. The presentation itself does not reveal which
+product, project, task, or Client holds a particular budget.
+
+The platform can still sign WBA(P), so the origin can also limit its traffic in aggregate.
+Credential contexts and spending terms should be shared across many
+endorsements; unique contexts or amounts would distinguish those units and
+shrink their anonymity sets.
+
+The allocation boundary can be chosen without adding a corresponding ID to
+requests:
+
+* Product: A platform or other suitable Anchor can reserve a finite pool of
+  Endorsements for a product and distribute them among its projects or
+  Clients. Spending is limited by the budgets derived from that pool. The
+  origin does not learn which product a presentation came from, nor can it
+  impose a different per-product policy from presentations alone.
+* Project: The platform can cap Endorsements for a tenant workspace and
+  allocate them among its Clients. Exhausting one Client's independent
+  Credential does not exhaust another's. The platform, not the origin,
+  accounts for how many endorsements belong to that project. A single
+  project-wide balance shared by many concurrent Clients is a different
+  requirement, discussed below.
+* Session: An Anchor can allocate Endorsements to a task (like an ephemeral
+  workload). The Anchor must count task allocations against a scarce parent
+  allowance so starting new tasks does not reset the limit. The allocating
+  party and Client must keep the resulting Credentials assigned to those
+  tasks: a MOLE presentation does not prove which task is using a Credential.
+  Alternatively, a Client can spend the same Credential across tasks when
+  task-specific budgets are unnecessary. Neither choice lets the origin link
+  requests as one task; that requires a session identifier if the origin
+  needs it.
+
+For example, suppose an Anchor grants at most two Endorsements per project
+per epoch and the Moderator issues each Credential with ten credits. If
+each accepted request spends one credit, with no refund or top-up, and the
+Credentials expire at the epoch boundary, that project's endorsements permit
+at most twenty budgeted requests in the epoch. The origin verifies the
+ten-credit limit on each Credential; the twenty-request total holds only if
+the Anchor actually issues no more than two Endorsements for that project
+and no other accepted Anchor supplies additional ones.
+
+The Anchor can also cap the sum of Endorsements across projects belonging
+to one product. The origin enforces each Credential's ten-credit limit
+without seeing the project or product; the project and product totals depend
+on the Anchor's issuance policy, not on an origin-side counter keyed by an ID.
+Additional accepted Anchors or Endorsements increase the available budget
+unless their policies constrain the combined allocation. Public-baseline
+requests and the platform's aggregate limit remain separate from this bound.
+
+These budgets replace identifiers only for the capacity decisions their
+issuance and spending policies implement. An origin cannot use an anonymous
+presentation to identify and block a particular project, audit its activity,
+or correlate all requests in a session. If it needs those functions, signed
+metadata can accompany MOLE, making requests linkable at the metadata's scope.
+
+## Capacity scopes
 
 A platform P can host tenants T, each with workloads W serving several
 Clients. An account U may authorize several Clients. The noisy-neighbour
@@ -494,7 +570,7 @@ policy constrains their combined allocation. Adding Clients must not yield
 unbounded replacement budgets. Aggregate platform limits still apply when
 individual budgets remain available.
 
-Concurrent requests need separate credential chains. Several Credentials
+Concurrent requests need separate credentials. Several Credentials
 provide separate balances, so assigning more Credentials can increase both
 concurrency and total consumption. Shared-budget splitting and simultaneous
 checks of aggregate and individual anonymous budgets remain open.
