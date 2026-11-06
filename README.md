@@ -1,14 +1,14 @@
 <!-- regenerate: off -->
 
-# PACE: Proportionate Access and Capacity Enforcement
+# AAA: Anonymous Agent Authentication
 
 Working draft of a MoLE-based approach to limiting clients behind shared
 intermediaries without requiring stable client identifiers at origins.
 This is an unpublished editor's copy being developed toward an individual -00.
 
-- [Editor's copy](https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-pace.html)
+- [Editor's copy](https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-aaa.html)
 - [Contributing](CONTRIBUTING.md)
-- [Draft source](draft-meunier-webbotauth-pace.md)
+- [Draft source](draft-meunier-webbotauth-aaa.md)
 
 ## Build locally
 
@@ -25,8 +25,8 @@ into `lib/` and installs its Python and Ruby tools there. The diagram dependency
 is installed into `node_modules/`. The first build needs network access for tools
 and bibliography entries.
 
-The build produces `draft-meunier-webbotauth-pace.html` and
-`draft-meunier-webbotauth-pace.txt`. Generated files and local review references
+The build produces `draft-meunier-webbotauth-aaa.html` and
+`draft-meunier-webbotauth-aaa.txt`. Generated files and local review references
 under `.review/` are ignored by Git.
 
 Building locally does not publish the draft. The inherited GitHub workflows can

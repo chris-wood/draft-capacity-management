@@ -1,9 +1,9 @@
 ---
-title: "Proportionate Access and Capacity Enforcement"
-abbrev: "PACE"
+title: "Anonymous Agent Authentication"
+abbrev: "AAA"
 category: info
 
-docname: draft-meunier-webbotauth-pace-latest
+docname: draft-meunier-webbotauth-aaa-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -19,7 +19,7 @@ venue:
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-brian"
-  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-pace.html"
+  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-aaa.html"
 
 author:
  -
@@ -73,6 +73,7 @@ informative:
     target: "https://webaim.org/blog/user-agent-string-history/"
   WBA-ABA: I-D.draft-rescorla-anonymous-webbotauth
   WBA-HTTPSIG: I-D.draft-ietf-webbotauth-httpsig-protocol
+  SIGNED-AGENT-METADATA: I-D.draft-vilgalys-webbotauth-signed-agent-metadata
   WIMSE-AIMS: I-D.draft-ietf-wimse-aims
   WIMSE-ARCH: I-D.draft-ietf-wimse-arch
 
@@ -82,11 +83,13 @@ informative:
 
 Origins often limit requests by address or by the platform carrying them.
 Clients behind shared infrastructure then share the consequences of one
-another's activity. This document sketches independently allocated budgets
-that let origins bound consumption without requiring stable Client identifiers.
-It describes how MOLE credentials preserve budget continuity across unlinkable
-presentations, how carrier attribution supports aggregate limits, and where
-composition with resource authorization needs further work.
+another's activity. Finer-grained identifiers can narrow that shared fate,
+but let origins link requests when all they need is to bound consumption.
+This document sketches independently allocated budgets that avoid stable
+Client identifiers. It describes how MOLE credentials preserve budget
+continuity across unlinkable presentations, how carrier attribution supports
+aggregate limits, and where composition with resource authorization needs
+further work.
 
 --- middle
 
@@ -112,38 +115,63 @@ longer be the one visible to the origin. AI agents, on the user's device or
 hosted remotely, fetch and render information in place of browsers. User-Agent
 strings are still spoofed.
 
-Origins need to apply policy despite these changes. Many approaches rely on
-obtaining a stable identifier. An address, including an {{IPv6}} address, is not
-necessarily a user. Blocking a shared IP range can affect everyone behind it.
-In enterprise settings, an agent can identify as a workload {{WIMSE-AIMS}}.
-Platforms that can tolerate attribution can identify using {{WBA-HTTPSIG}}.
-Other approaches involve user authentication or authorization, such as {{AAUTH}}
-and {{OAUTH-XAA}}. {{system}} places these options side by side.
+Origins need to apply policy despite these changes. An address, including an
+{{IPv6}} address, is not necessarily a user. Blocking a shared IP range can
+affect everyone behind it. A platform signing requests under one
+{{WBA-HTTPSIG}} identity creates a similar shared fate: when one tenant's
+agent overloads an origin, limiting the platform also limits its other
+tenants. {{SIGNED-AGENT-METADATA}} describes this problem and proposes
+signed product, project, and session identifiers to let an origin isolate
+traffic below the platform level.
 
-While identification solves many problems, it should not be necessary just to
-limit an agent's consumption. The problem is to give origins that control
-without requiring users or their agents to disclose a stable identifier. This
-supports the user interests discussed in {{INTERNET-FOR-END-USER}}.
+More granular identifiers are useful when the origin needs to attribute
+activity to a specific principal that's identified. However, they come at
+a number of costs:
 
-## Motivating use cases
+- Discriminatory treatment: Explicit identifiers allow for discriminatory
+treatment of traffic based on those identifiers. This could be used for
+the purposes of giving preferential or treatment to some traffic over others,
+such as by blocking certain types of traffic depending on their requests.
+- Privacy: Explicit identifiers allow for linking traffic to that identifier.
+The more granular the identifier, the more precise of a profile this linkability
+offers.
 
-In the cases below, traffic passes through platforms. Each user also has a
-relationship with some Anchor, often but not necessarily that platform, which
-can grant scarce Endorsements. Origins could use those to apply rate-limit
-policies without learning who the user is.
+This presents natural tension between the needs of an origin and the needs
+of an agent. Identifiers are sufficient for enforcing capacity and abuse 
+control on the granularity of the identifiers provided, but identifiers can
+lead to harmful outcomes for agents.
 
-1. AI agent services host remote agents and concentrate their traffic on a
-   small set of IP addresses. One user's activity can affect others when an
-   origin can only limit the shared address or the platform as a whole.
+This document discusses the framework of Anonymous Agent Authentication (AAA).
+AAA navigates this tension using MOLE (Moderation of unLinkable Endorsements),
+an emerging technology for private rate limiting {{MOLE-ARCH}}. The goal of AAA
+is to let origins bound consumption on a per-principal -- typically a per-agent
+-- basis without making disclosure of the principal a condition of access,
+and without forcing the origin to inadvertently harm other agents in the case
+of intermediation.
+
+Such a mechanism is useful in a number of cases. Consider the following:
+
+1. An AI agent service that hosts remote agents and concentrate their traffic
+   on a small set of IP addresses. One user's activity can affect others when
+   an origin can only limit the shared address or the platform as a whole.
 2. Network operators carry traffic from device-resident agents behind shared
    IP ranges. Policies applied to an address range or an entire ASN give these
    users a shared fate.
-3. VPN providers and enterprise ZTNA gateways have a noisy neighbour problem.
-   They may know their users, but should not have to expose them to each
-   origin. An origin able to tell employees apart could single out an
+3. VPN providers and enterprise zero trust gateways have a noisy neighbour
+   problem. They may know their users, but should not have to expose them to
+   each origin. An origin able to tell employees apart could single out an
    executive's activity for instance.
 
 ## Related work
+
+{{SIGNED-AGENT-METADATA}} addresses shared fate under a platform's Web Bot
+Auth signature with signed, pseudonymous sub-identifiers. It lets an origin
+apply policy to a product, project, or session while the platform can map
+those identifiers back to its customers. This is useful for attribution and
+investigation, but the identifiers remain linkable to the origin for their
+lifetimes. MOLE serves the case where the origin needs a scarce budget
+without such a handle; it does not provide the same tenant-specific abuse
+reporting to a platform.
 
 {{WBA-ABA}} shares the anonymous rate-limiting goal and the MOLE construction.
 This document is a companion to it. It focuses on platforms that already have
@@ -194,56 +222,42 @@ not establish a unique account, workload, device, or other principal.
 
 MOLE(X) denotes a presentation for budget scope X. MOLE(C) is a Client's
 budget, while MOLE(T), MOLE(W), and MOLE(U) denote tenant, workload, and
-account scopes. These labels do not appear as identifiers in presentations.
-WBA(P) denotes a Web Bot Auth signature from intermediary P. A credential
-chain is the sequence of Credentials obtained by updating one initial Credential. The Client experiences continuity through
-that chain without giving the origin a session identifier.
+agent scopes. These labels do not appear as identifiers in presentations.
+WBA(Y) denotes a Web Bot Auth signature from intermediary Y. 
 
 # Scope and principles {#principles}
 
-The aim is to bound consumption through independently allocated budgets
-without requiring a stable Client identifier. Exhausting one budget should
-not exhaust an unrelated budget. Enforcement still depends on constrained
+The aim of AAA is to bound consumption through independently allocated budgets
+without requiring a stable client identifier. Exhausting one budget should
+not exhaust an unrelated budget. The privacy objective is to separate the
+relationship used to obtain a budget from the requests that spend it
+{{PRIVACY-PARTITIONING}}. Enforcement still depends on constrained
 issuance and available capacity. A platform aggregate limit can affect every
-Client behind it even when their individual budgets remain usable.
+client behind it even when their individual budgets remain usable.
 
 For public resources, the deployment goal is a baseline level of access
-without a Credential or signature. This baseline remains subject to capacity
+without a credential or signature. This baseline remains subject to capacity
 and request behavior. Scarce Endorsements can support access above it.
 Absence of an active signal does not itself establish abuse {{CIVIL}}.
+
 Permissioned resources may require authorization before serving any content.
+Naturally, authorization ("is the entity allowed to do this?") requires
+some mechanism for authenticating ("who is the entity?"), and so in such
+cases it is wholly appropriate for agents to authenticate with stable
+identifiers.
 
 Clients choose which evidence to offer. Origins should ask only for evidence
 needed by the requested operation. A verified identity does not establish that
 a request is harmless, and a valid budget does not grant every permission.
-Access to accepted Anchors is uneven, so scarce issuance alone does not ensure
-fair allocation.
-
-The privacy objective is to separate the relationship used to obtain a budget
-from the requests that spend it {{PRIVACY-PARTITIONING}}. Presentations should
-reveal only what the origin needs to apply its policy. Network metadata and
-other request fields can still identify or correlate Clients.
-
-The flows below use the EC-ACT credential type of {{MOLE-PROTOCOLS}}. Other
-MOLE credential types can have different properties. This is a deployment
-sketch using work in progress. The composition gaps are listed in
-{{composition}}, and the underlying construction's security analysis remains
-incomplete {{EC-ACT}}.
+Moreover, client evidence should reveal only what the origin needs to apply
+its policy. Network metadata and other request fields can still identify
+or correlate clients.
 
 # Attribution and authorization {#system}
 
 An origin decides whether to serve an operation and how much capacity to
 allocate to it. The evidence it accepts can establish attribution, permission,
-or a remaining budget. A request may need more than one.
-
-An implementer can assess each form of evidence along four parameters:
-
-| Parameter | Question |
-|-----------|----------|
-| Principal or budget scope | Which party or allocation does the evidence concern? |
-| Linkability | Can requests be joined per artifact, session, or principal? |
-| Property conveyed | Does it establish attribution, permission, or capacity? |
-| Trust source | Which signer, Anchor Set, or authority must the origin accept? |
+or capacity. A request may need more than one.
 
 ## Attribution
 
@@ -284,22 +298,17 @@ authorization protocol with its own challenges and credentials.
 
 ## Capacity
 
-An EC-ACT Credential holds a hidden balance c. A presentation proves that it
-covers a requested spend s. The Moderator can return an amount t, bounded by
-s plus the offered top-up a. The replacement Credential holds c - s + t.
+MOLE credentials hold a hidden balance c. A presentation proves that it
+covers a requested spend s. The moderator can return an amount t, bounded by
+s plus the offered top-up a. The replacement credential holds c - s + t.
 The origin learns the public amounts and that the spend was possible, without
-learning the balance or a stable Client identifier {{MOLE-PROTOCOLS}}.
+learning the balance or a stable client identifier {{MOLE-PROTOCOLS}}.
 
 For example, a policy can issue B credits, charge one per accepted presentation,
 and return zero with no top-ups. Each issuance then allows at most B fresh
 accepted operation attempts. Further issuances increase that allocation.
 Bounding consumption over time also requires policy for replenishment and
 expiry. Refunding every spend in full leaves successful consumption unbounded.
-
-A principal that already authenticates may still need several independent
-budgets. Metering that principal does not replace those allocations. Conversely,
-adding MOLE to requests that already carry a stable identifier does not make
-those requests unlinkable.
 
 ## Composition {#composition}
 
@@ -322,32 +331,23 @@ an encoding.
 
 # Moderating consumption {#processing-steps}
 
-The origin configures its accepted Anchor Set, credential contexts, allocation
-and spending policy, and any permission requirements. A Client may send an
-initial request without evidence. The origin verifies what is present and
+The origin's moderator configures its accepted Anchor Set, credential contexts,
+allocation and spending policy, and any permission requirements. A client may
+send an initial request without evidence. The origin verifies what is present and
 serves the level of access its policy permits. A public response can offer
 more capacity through a MOLE challenge. A permissioned resource can refuse the
 operation and challenge for the missing authorization.
 
-A MOLE redemption challenge lets a Client obtain a Credential. A presentation
+A MOLE redemption challenge lets a client obtain a credential. A presentation
 challenge specifies its spending terms. Clients use the exchanges and
 verification rules of {{MOLE-PROTOCOLS}} and {{MOLE-HTTP}}, including replay
 checks and request binding. A failed proof supplies no evidence of budget.
-
-For EC-ACT, the Moderator records the spend result atomically before attempting
-the operation. It chooses a refund or NoUpdate from the evidence available at
-that point. The response carries that recorded result even if the operation
-fails. Choosing a refund from the operation's eventual outcome would require
-additional settlement behavior not defined by this flow.
-
-A refund replaces the spent Credential. A zero refund leaves c - s credits.
-NoUpdate ends the chain and forfeits its remaining balance. At the HTTP layer,
-an empty Mole-Credential update conveys NoUpdate. A missing update does not.
+A refund replaces the spent Credential with an updated one.
 
 After a lost response, the Client can recover the recorded credential result
 within the retention period. Recovery does not repeat the protected operation
 or establish whether it completed. Application recovery remains separate.
-One credential chain permits one presentation in flight at a time.
+One credential permits one presentation in flight at a time.
 
 ## Public access with WBA and MOLE {#flow1}
 
@@ -411,67 +411,6 @@ The Moderator is shown at the origin.
 A direct Client uses the same exchange without WBA(P). A Client unable or
 unwilling to present continues at the public baseline, subject to origin policy.
 A failed presentation does not authorize the budgeted level of access.
-
-## Permissioned access with a separate budget {#flow2}
-
-In this example, the same software acts as the OAuth client and, when a
-separate budget is required, the MOLE Client. The roles need not coincide in
-other deployments. It requests an operation requiring an OAuth access token.
-The resource uses protected resource metadata {{OAUTH-RS-META}} to identify its authorization
-server. The grant issuer below is a Workload Identity Provider for WAG, or an
-Identity Provider Authorization Server for ID-JAG. Each requires an existing
-trust arrangement with the resource's authorization server.
-
-~~~aasvg
-+-------------+  +-------------+   +---------------+  +---------------+
-|Grant issuer |  |   Client    |   | Authorization |  |   Resource    |
-|             |  |             |   |    server     |  |               |
-+------+------+  +------+------+   +-------+-------+  +-------+-------+
-       |                |          operation request          |
-       |                +------------------+----------------->+
-       |                |                  |                  |
-       |                |    challenge + resource metadata    |
-       |                +<-----------------+------------------+
-       |                |                  |                  |
-       | request grant  |                  |                  |
-       +<---------------+                  |                  |
-       |                |                  |                  |
-       |     grant      |                  |                  |
-       +--------------->+                  |                  |
-       |                |                  |                  |
-       |                |  grant exchange  |                  |
-       |                +----------------->+                  |
-       |                |                  |                  |
-       |                |   access token   |                  |
-       |                +<-----------------+                  |
-       |                |                  |                  |
-       |                |      operation + access token       |
-       |                |  proof of possession, if required   |
-       |                +------------------+----------------->+
-       |                |                  |                  |
-       |                |     verify permission and apply     |
-       |                |    capacity policy, then respond    |
-       |                +<-----------------+------------------+
-       |                |                  |                  |
-
-    Optional MOLE budget: flow 1.
-    Combined carriage remains undefined.
-~~~
-{: #permission-sequence title="Permissioned access with optional independent budget enforcement"}
-
-For WAG, the Client exchanges a workload assertion for an access token. For
-ID-JAG, it obtains a grant through the existing federation and exchanges it
-at the resource's authorization server. The resource receives the resulting
-access token, not either grant. A Client with a suitable token skips this
-exchange. Bearer challenges follow {{BEARER}}. DPoP uses its own authentication
-scheme {{DPOP}}. Insufficient scope and authentication strength or freshness
-are distinct failures, handled by {{BEARER}} and {{STEPUP}}, respectively.
-
-The resource can meter an authenticated principal or require a separate budget
-for the Client's activity. Several Clients authorized under the same principal
-can have independent allocations. Requiring both permission and a MOLE budget
-needs the composition work described in {{composition}}. A workload signature
-alone does not replace the access token's permissions.
 
 # Deployment considerations {#examples}
 
