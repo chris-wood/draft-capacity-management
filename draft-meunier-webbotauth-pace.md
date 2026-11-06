@@ -355,31 +355,42 @@ The origin offers a budget above its public baseline. Client C already holds
 an Endorsement from an accepted Anchor. Intermediary P adds its own signature.
 The Moderator is shown at the origin.
 
-~~~
-Anchor        Client C      Intermediary P      Origin
-  |               |                |          (Moderator)
-  | Endorsement   |                |               |
-  |-------------->|                |               |
-  |               | request        |               |
-  |               |--------------->| + WBA(P)       |
-  |               |                |-------------->|
-  |               | baseline + redemption and      |
-  |               | presentation challenges        |
-  |               |<---------------|<--------------|
-  |               |                |               |
-  |               | Redeem & Issue |               |
-  |               |--------------->|-------------->|
-  |               | Credential with balance c      |
-  |               |<---------------|<--------------|
-  |               |                |               |
-  |               | request + MOLE(C)              |
-  |               |--------------->| + WBA(P)       |
-  |               |                |-------------->|
-  |               |                |     record spend result
-  |               |                |     attempt operation
-  |               | response + Update              |
-  |               |<---------------|<--------------|
-  |               | balance c - s + t              |
+~~~aasvg
++-------------+  +-------------+   +---------------+  +---------------+
+|   Anchor    |  |  Client C   |   | Intermediary  |  |    Origin     |
+|             |  |             |   |       P       |  |   Moderator   |
++------+------+  +------+------+   +-------+-------+  +-------+-------+
+       |  Endorsement   |                  |                  |
+       +--------------->+                  |                  |
+       |                |                  |                  |
+       |                |     request      |                  |
+       |                +----------------->+                  |
+       |                |                  |                  |
+       |                |                  |     + WBA(P)     |
+       |                |                  +----------------->+
+       |                |                  |                  |
+       |                |      baseline + redemption and      |
+       |                |       presentation challenges       |
+       |                +<-----------------+------------------+
+       |                |                  |                  |
+       |                |           Redeem & Issue            |
+       |                +------------------+----------------->+
+       |                |                  |                  |
+       |                |      Credential with balance c      |
+       |                +<-----------------+------------------+
+       |                |                  |                  |
+       |                |request + MOLE(C) |                  |
+       |                +----------------->+                  |
+       |                |                  |                  |
+       |                |                  |     + WBA(P)     |
+       |                |                  +----------------->+
+       |                |                  |                  |
+       |                |   record spend, attempt operation   |
+       |                |        response with Update         |
+       |                +<-----------------+------------------+
+       |                |                  |                  |
+
+                   Client balance: c - s + t
 ~~~
 {: #sequence title="Public access with carrier attribution and an anonymous budget"}
 
@@ -411,32 +422,40 @@ server. The grant issuer below is a Workload Identity Provider for WAG, or an
 Identity Provider Authorization Server for ID-JAG. Each requires an existing
 trust arrangement with the resource's authorization server.
 
-~~~
-Grant issuer     Client       Authorization server     Resource
-     |              |                  |                  |
-     |              | operation request                   |
-     |              |------------------------------------>|
-     |              | challenge + resource metadata       |
-     |              |<------------------------------------|
-     |              |                  |                  |
-     |<-- request --|                  |                  |
-     |--- grant --->|                  |                  |
-     |              | grant exchange   |                  |
-     |              |----------------->|                  |
-     |              | access token     |                  |
-     |              |<-----------------|                  |
-     |              |                  |                  |
-     |              | operation + access token            |
-     |              | + proof of possession, if required  |
-     |              |------------------------------------>|
-     |              |                  |     verify permission
-     |              |                  |     apply capacity policy
-     |              | response         |                  |
-     |              |<------------------------------------|
-     |              |                  |                  |
-     |              | Optional separate MOLE budget       |
-     |              | follows flow 1. Combined carriage   |
-     |              | remains an open composition point.  |
+~~~aasvg
++-------------+  +-------------+   +---------------+  +---------------+
+|Grant issuer |  |   Client    |   | Authorization |  |   Resource    |
+|             |  |             |   |    server     |  |               |
++------+------+  +------+------+   +-------+-------+  +-------+-------+
+       |                |          operation request          |
+       |                +------------------+----------------->+
+       |                |                  |                  |
+       |                |    challenge + resource metadata    |
+       |                +<-----------------+------------------+
+       |                |                  |                  |
+       | request grant  |                  |                  |
+       +<---------------+                  |                  |
+       |                |                  |                  |
+       |     grant      |                  |                  |
+       +--------------->+                  |                  |
+       |                |                  |                  |
+       |                |  grant exchange  |                  |
+       |                +----------------->+                  |
+       |                |                  |                  |
+       |                |   access token   |                  |
+       |                +<-----------------+                  |
+       |                |                  |                  |
+       |                |      operation + access token       |
+       |                |  proof of possession, if required   |
+       |                +------------------+----------------->+
+       |                |                  |                  |
+       |                |     verify permission and apply     |
+       |                |    capacity policy, then respond    |
+       |                +<-----------------+------------------+
+       |                |                  |                  |
+
+    Optional MOLE budget: flow 1.
+    Combined carriage remains undefined.
 ~~~
 {: #permission-sequence title="Permissioned access with optional independent budget enforcement"}
 
