@@ -36,6 +36,9 @@ normative:
 informative:
   CIVIL: I-D.draft-meunier-bcp-civil
   AAUTH: I-D.draft-hardt-oauth-aauth-protocol
+  CONNECT-UDP: RFC9298
+  CONNECT-IP: RFC9484
+  OHTTP: RFC9458
   PRIVACY-PARTITIONING: RFC9614
   HTTP: RFC9110
   HTTPSIG: RFC9421
@@ -63,6 +66,9 @@ informative:
   AAP:
     title: "Agent Attestation Protocol"
     target: "https://github.com/agentic-protocols/agentic-attestation-protocol/blob/1328a6bbfda24ea18bcd8996a5417a6702c8f274/draft-agent-attestation-protocol.md"
+  USER-AGENT-HISTORY:
+    title: "WebAIM: History of the browser user-agent string"
+    target: "https://webaim.org/blog/user-agent-string-history/"
   WBA-ABA: I-D.draft-rescorla-anonymous-webbotauth
   WBA-HTTPSIG: I-D.draft-ietf-webbotauth-httpsig-protocol
   SIGNED-AGENT-METADATA: I-D.draft-vilgalys-webbotauth-signed-agent-metadata
@@ -85,6 +91,26 @@ authorization primitives needs further work.
 --- middle
 
 # Introduction {#intro}
+
+Agents are increasingly used in business and user workflows, including AI
+assistants, search indexing, content aggregation, and automated testing. Their
+relationship with origins is symbiotic. They need information from origins, and
+origins need signals to apply rate-limit policies. These can be binary, like
+allow or block when an origin cannot serve traffic, or resource-based to
+allocate capacity among clients.
+
+Historically, most of these signals have been enshrined into deployments of
+internet protocols. An agent needs an IP address to receive a response from an
+origin. Its TLS stack and browser behavior provide further signals. It provides
+a familiar User-Agent because middleboxes might otherwise filter its traffic
+(see {{USER-AGENT-HISTORY}}).
+
+Recent developments break these patterns. Agents use proxies
+({{CONNECT-UDP}}, {{CONNECT-IP}}, {{OHTTP}}, or plain {{HTTP}}).
+As platforms make requests on behalf of users, the user's TLS stack may no
+longer be the one visible to the origin. AI agents, on the user's device or
+hosted remotely, fetch and render information in place of browsers. User-Agent
+strings are still spoofed.
 
 An address, including an {{IPv6}} address, is not necessarily a user. Blocking
 a shared IP range can affect everyone behind it. A platform signing requests under one
