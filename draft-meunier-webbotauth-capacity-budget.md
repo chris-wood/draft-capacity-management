@@ -1,9 +1,9 @@
 ---
-title: "Anonymous Agent Authentication"
-abbrev: "AAA"
+title: "Capacity Budget for Agents"
+abbrev: "Capacity Budget for Agents"
 category: info
 
-docname: draft-meunier-webbotauth-aaa-latest
+docname: draft-meunier-webbotauth-capacity-budget-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -19,7 +19,7 @@ venue:
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-brian"
-  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-aaa.html"
+  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-capacity-budget.html"
 
 author:
  -
@@ -36,16 +36,11 @@ normative:
 informative:
   CIVIL: I-D.draft-meunier-bcp-civil
   AAUTH: I-D.draft-hardt-oauth-aauth-protocol
-  CONNECT-UDP: RFC9298
-  CONNECT-IP: RFC9484
-  OHTTP: RFC9458
   PRIVACY-PARTITIONING: RFC9614
   HTTP: RFC9110
   HTTPSIG: RFC9421
   OAUTH: RFC6749
   BEARER: RFC6750
-  OAUTH-RS-META: RFC9728
-  STEPUP: RFC9470
   DPOP: RFC9449
   MTLS: RFC8705
   DIGEST: RFC9530
@@ -68,9 +63,6 @@ informative:
   AAP:
     title: "Agent Attestation Protocol"
     target: "https://github.com/agentic-protocols/agentic-attestation-protocol/blob/1328a6bbfda24ea18bcd8996a5417a6702c8f274/draft-agent-attestation-protocol.md"
-  USER-AGENT-HISTORY:
-    title: "WebAIM: History of the browser user-agent string"
-    target: "https://webaim.org/blog/user-agent-string-history/"
   WBA-ABA: I-D.draft-rescorla-anonymous-webbotauth
   WBA-HTTPSIG: I-D.draft-ietf-webbotauth-httpsig-protocol
   SIGNED-AGENT-METADATA: I-D.draft-vilgalys-webbotauth-signed-agent-metadata
@@ -86,9 +78,9 @@ This document describes how to manage budget continuity across requests using
 stable client identifier at the origin. Separately allocated budgets let
 origins limit consumption beneath a shared platform identity.
 
-This document describes how Clients and origins can use {{MOLE-ARCH}} to enforce
-budget policies, how shared infrastructure attribution supports aggregate
-limits, and where composition with authorization primitives needs further work.
+The deployment described here combines Client budgets with shared
+infrastructure attribution for aggregate limits. Composition with
+authorization primitives needs further work.
 
 --- middle
 
@@ -101,26 +93,6 @@ agent overloads an origin, limiting the platform also limits its other
 tenants. {{SIGNED-AGENT-METADATA}} describes this problem and proposes
 signed product, project, and session identifiers to let an origin isolate
 traffic below the platform level.
-
-Agents are increasingly used in business and user workflows, including AI
-assistants, search indexing, content aggregation, and automated testing. Their
-relationship with origins is symbiotic. They need information from origins, and
-origins need signals to apply rate-limit policies. These can be binary, like
-allow or block when an origin cannot serve traffic, or resource-based to
-allocate capacity among clients.
-
-Historically, most of these signals have been enshrined into deployments of
-internet protocols. An agent needs an IP address to receive a response from an
-origin. Its TLS stack and browser behavior provide further signals. It provides
-a familiar User-Agent because middleboxes might otherwise filter its traffic
-(see {{USER-AGENT-HISTORY}}).
-
-Recent developments break these patterns. Agents use proxies
-({{CONNECT-UDP}}, {{CONNECT-IP}}, {{OHTTP}}, or plain {{HTTP}}).
-As platforms make requests on behalf of users, the user's TLS stack may no
-longer be the one visible to the origin. AI agents, on the user's device or
-hosted remotely, fetch and render information in place of browsers. User-Agent
-strings are still spoofed.
 
 More granular identifiers are useful when the origin needs to recognize a
 particular product or project, investigate abuse with its platform, or follow
@@ -149,7 +121,7 @@ has to be able to apply policies to traffic whether it finds it abusive or
 acceptable. Bounding consumption does not always require more fine-grained
 identifiers.
 
-This document describes Anonymous Agent Authentication (AAA) using MOLE,
+This document describes capacity budgets for agents using MOLE,
 an architecture for private moderation {{MOLE-ARCH}}. Separately allocated
 budgets let the origin charge one Client's requests without consuming
 another's allocation. MOLE alone does not ensure one budget per agent or
@@ -157,10 +129,11 @@ enforce a per-agent rate over time. The draft describes how Clients obtain
 Endorsements and Credentials, and how Anchor issuance and Moderator spending
 policies constrain those budgets.
 
-For these capacity decisions, the origin need not receive product, project,
-or session identifiers. When used, a platform signature remains visible, along with public spending
-terms and other request data. AAA does not prevent discrimination based
-on that information.
+Avoiding unnecessary disclosure supports the end-user interests discussed in
+{{INTERNET-FOR-END-USER}}. For these capacity decisions, the origin need not
+receive product, project, or session identifiers. When used, a platform
+signature remains visible, along with public spending terms and other request
+data. This approach does not prevent discrimination based on that information.
 
 Such a mechanism is useful in a number of cases. Some examples follow:
 
@@ -251,7 +224,7 @@ For the origin to ask the platform to investigate a tenant or change its future
 allocations, they need a feedback arrangement. One possible extension would
 require a fresh platform Endorsement before accepting an origin-issued
 Privacy Pass token, using a reverse-flow exchange. Feedback could also occur out of band. These
-are possible deployment arrangements, not exchanges specified by AAA. Their
+are possible deployment arrangements, not exchanges specified here. Their
 binding to the affected allocation, enforcement, and disclosure to each party
 remain to be defined. They need not require a persistent tenant identifier at
 the origin.
@@ -264,9 +237,9 @@ apply policy to a product, project, or session while the platform can map
 those identifiers back to its customers. Origin-scoped session values
 reduce cross-origin correlation ({{Section 7.2 of SIGNED-AGENT-METADATA}}). However,
 each identifier still links requests within its own scope and lifetime.
-As described in {{scenarios}}, AAA does not specify tenant-specific abuse
-reporting.
-An Anchor can constrain project allocations, but the origin cannot recognize
+As described in {{scenarios}}, this document does not specify tenant-specific
+abuse reporting. An Anchor can constrain project allocations, but the origin
+cannot recognize
 and selectively block all of a project's independent Credentials from their
 presentations alone.
 
@@ -275,18 +248,9 @@ Its deployment relies on Anchor vetting and origin acceptance of issuance
 policies ({{Sections 3 and 4.1 of WBA-ABA}}). It also discusses convergence on
 accepted policies ({{Section 4.3 of WBA-ABA}}) and the risk of cheap registration
 yielding multiple credentials ({{Section 8.2 of WBA-ABA}}). These are governance
-dependencies between Anchors and sites. AAA shares those dependencies and
-focuses on allocations beneath a platform's identity, where the platform can
-use its existing tenant relationships to constrain new budgets.
-
-Given both AAA and ABA rely on MOLE, should ABA see traction, platforms
-supporting AAA could use MOLE's issuer-hiding capability to form virtual
-platforms: groups of platform Anchors accepted under a common policy. An origin
-would learn that an Endorsement came from an accepted Anchor without learning
-which platform issued it. Moving away from platform-specific identifiers would
-also require origins to accept requests without a platform-specific signature.
-Network metadata and other request fields could still reveal the platform.
-This is a possible deployment direction, not a mechanism specified by AAA.
+dependencies between Anchors and sites. This approach shares those dependencies
+and focuses on allocations beneath a platform's identity, where the platform
+can use its existing tenant relationships to constrain new budgets.
 
 Poppy {{POPPY}} uses User IDs and sessions, including for anonymous browsing.
 {{AAP}} uses anonymous admission tokens and recommends a session afterwards,
@@ -337,7 +301,7 @@ WBA(Y) denotes a Web Bot Auth signature from intermediary Y.
 
 # Scope and principles {#principles}
 
-The aim of AAA is to bound consumption through independently allocated budgets
+The aim is to bound consumption through independently allocated budgets
 without requiring a stable client identifier. Exhausting one budget should
 not exhaust another allocation, provided Anchor issuance and Moderator
 spending policies keep them separate. The privacy objective is to separate
@@ -431,8 +395,8 @@ as discussed in {{security}}. Multiple signature profiles can use distinct
 labels, with each verifier applying the corresponding profile.
 
 Permission and capacity can also be required together. However, MOLE,
-PrivateToken, and OAuth access tokens use the Authorization field, which
-carries one credentials value {{Section 11.6.2 of HTTP}}. The current MOLE
+PrivateToken, and OAuth bearer tokens {{BEARER}} use the Authorization field,
+which carries one credentials value {{Section 11.6.2 of HTTP}}. The current MOLE
 transport also selects one presentation per request {{MOLE-HTTP}}. Carriage
 of several budgets or of a budget beside another authorization scheme remains
 undefined here.

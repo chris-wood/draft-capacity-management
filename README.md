@@ -1,14 +1,14 @@
 <!-- regenerate: off -->
 
-# AAA: Anonymous Agent Authentication
+# Capacity Budget for Agents
 
 Working draft of a MoLE-based approach to limiting clients behind shared
 intermediaries without requiring stable client identifiers at origins.
 This is an unpublished editor's copy being developed toward an individual -00.
 
-- [Editor's copy](https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-aaa.html)
+- [Editor's copy](https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-capacity-budget.html)
 - [Contributing](CONTRIBUTING.md)
-- [Draft source](draft-meunier-webbotauth-aaa.md)
+- [Draft source](draft-meunier-webbotauth-capacity-budget.md)
 
 ## Build locally
 
@@ -25,8 +25,8 @@ into `lib/` and installs its Python and Ruby tools there. The diagram dependency
 is installed into `node_modules/`. The first build needs network access for tools
 and bibliography entries.
 
-The build produces `draft-meunier-webbotauth-aaa.html` and
-`draft-meunier-webbotauth-aaa.txt`. Generated files and local review references
+The build produces `draft-meunier-webbotauth-capacity-budget.html` and
+`draft-meunier-webbotauth-capacity-budget.txt`. Generated files and local review references
 under `.review/` are ignored by Git.
 
 Building locally does not publish the draft. The inherited GitHub workflows can
