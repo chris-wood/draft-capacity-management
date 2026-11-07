@@ -81,26 +81,33 @@ informative:
 
 --- abstract
 
-Origins often limit requests by address or by the platform carrying them.
-Clients behind shared infrastructure then share the consequences of one
-another's activity. Signed product, project, or session identifiers can
-narrow that shared fate, but also let origins link requests. When the goal
-is only to bound consumption, such identifiers need not be disclosed: this
-document sketches independently allocated, scarce budgets instead. It
-describes how MOLE credentials preserve budget continuity across unlinkable
-presentations, how carrier attribution supports aggregate limits, and where
-composition with resource authorization needs further work.
+This document describes how to manage budget continuity across requests using
+{{MOLE-ARCH}}. It addresses the noisy neighbour problem without requiring a
+stable client identifier at the origin. Separately allocated budgets let
+origins limit consumption beneath a shared platform identity.
+
+This document describes how Clients and origins can use {{MOLE-ARCH}} to enforce
+budget policies, how shared infrastructure attribution supports aggregate
+limits, and where composition with authorization primitives needs further work.
 
 --- middle
 
 # Introduction {#intro}
 
+An address, including an {{IPv6}} address, is not necessarily a user. Blocking
+a shared IP range can affect everyone behind it. A platform signing requests under one
+{{WBA-HTTPSIG}} identity creates a similar shared fate: when one tenant's
+agent overloads an origin, limiting the platform also limits its other
+tenants. {{SIGNED-AGENT-METADATA}} describes this problem and proposes
+signed product, project, and session identifiers to let an origin isolate
+traffic below the platform level.
+
 Agents are increasingly used in business and user workflows, including AI
 assistants, search indexing, content aggregation, and automated testing. Their
 relationship with origins is symbiotic. They need information from origins, and
 origins need signals to apply rate-limit policies. These can be binary, like
-allow or block when an origin cannot serve traffic, or resource-based to ensure
-fair access to everyone.
+allow or block when an origin cannot serve traffic, or resource-based to
+allocate capacity among clients.
 
 Historically, most of these signals have been enshrined into deployments of
 internet protocols. An agent needs an IP address to receive a response from an
@@ -115,51 +122,49 @@ longer be the one visible to the origin. AI agents, on the user's device or
 hosted remotely, fetch and render information in place of browsers. User-Agent
 strings are still spoofed.
 
-Origins need to apply policy despite these changes. An address, including an
-{{IPv6}} address, is not necessarily a user. Blocking a shared IP range can
-affect everyone behind it. A platform signing requests under one
-{{WBA-HTTPSIG}} identity creates a similar shared fate: when one tenant's
-agent overloads an origin, limiting the platform also limits its other
-tenants. {{SIGNED-AGENT-METADATA}} describes this problem and proposes
-signed product, project, and session identifiers to let an origin isolate
-traffic below the platform level.
-
 More granular identifiers are useful when the origin needs to recognize a
 particular product or project, investigate abuse with its platform, or follow
 a task within a session. {{SIGNED-AGENT-METADATA}} advocates for such
 identifiers. While they are pseudonymous, the receiving origin can link
-requests within the context of such identifiers. This has two immediate
-costs:
+requests within the scope and lifetime of those identifiers. This has several
+privacy costs:
 
 - Discriminatory treatment: Explicit identifiers allow for discriminatory
-  treatment of traffic based on those identifiers. This could be used for
-  the purposes of giving preferential treatment to some traffic over others,
-  such as by blocking certain types of traffic depending on their requests.
-- Privacy: Explicit identifiers allow for linking traffic to that identifier.
-  The more granular the identifier, the more precise of a profile this
-  linkability offers.
+  treatment of traffic based on those identifiers. An origin can give
+  preferential treatment to some products or projects, or block them
+  regardless of their requests' behavior.
+- Linkability: Explicit identifiers allow for linking traffic to that identifier.
+  The scope and lifetime of the identifier, together with other request data,
+  determine how much activity the origin can associate with it.
+- Relationship disclosure: Explicit identifiers reveal information about the
+  relationship between an intermediary and its clients, such as which requests
+  belong to the same project. Clients may have no clear view of how that
+  information will be processed, stored, or shared.
 
-This presents natural tension between the needs of an origin and the needs
-of an agent. Identifiers are sufficient for enforcing capacity and abuse
-control on the granularity of the identifiers provided, but identifiers can
-lead to harmful outcomes for agents. An origin needs to distinguish abusive
-from acceptable behavior, but does not always need a persistent handle on
-the party behind it.
+This presents a natural tension between the needs of an origin and the needs
+of a user. Identifiers give an origin a way to apply capacity and abuse
+controls at the granularity provided. This depends on the platform assigning
+them reliably. Agents using those controls bear the cost of attribution. An origin
+has to be able to apply policies to traffic whether it finds it abusive or
+acceptable. Bounding consumption does not always require more fine-grained
+identifiers.
 
-If the origin's goal is only to bound each consumption to products, projects,
-or platforms, identifiers are not strictly necessary.
-This document describes Anonymous Agent Authentication (AAA) using MOLE
-(Moderation of unLinkable Endorsements), an architecture for private
-moderation {{MOLE-ARCH}}. Separately allocated budgets can keep one Client's
-spending from exhausting another's allocation behind shared infrastructure.
-This requires Anchor policies that constrain issuance and Moderator policies
-that charge and replenish balances; MOLE alone does not ensure one budget
-per agent or enforce a per-agent rate over time. Public access need not be
-conditioned on disclosure of a stable identifier.
+This document describes Anonymous Agent Authentication (AAA) using MOLE,
+an architecture for private moderation {{MOLE-ARCH}}. Separately allocated
+budgets let the origin charge one Client's requests without consuming
+another's allocation. MOLE alone does not ensure one budget per agent or
+enforce a per-agent rate over time. The draft describes how Clients obtain
+Endorsements and Credentials, and how Anchor issuance and Moderator spending
+policies constrain those budgets.
+
+For these capacity decisions, the origin need not receive product, project,
+or session identifiers. When used, a platform signature remains visible, along with public spending
+terms and other request data. AAA does not prevent discrimination based
+on that information.
 
 Such a mechanism is useful in a number of cases. Some examples follow:
 
-1. An AI agent service that hosts remote agents and concentrate their traffic
+1. An AI agent service that hosts remote agents and concentrates their traffic
    on a small set of IP addresses. One user's activity can affect others when
    an origin can only limit the shared address or the platform as a whole.
 2. Network operators carry traffic from device-resident agents behind shared
@@ -170,33 +175,127 @@ Such a mechanism is useful in a number of cases. Some examples follow:
    each origin. An origin able to tell employees apart could single out an
    executive's activity for instance.
 
+## Budget limits and banning an abusive chain {#scenarios}
+
+A platform hosts agents for two tenants. Tenant A sends excessive requests
+while tenant B runs a shopping agent within its allocation. Both tenants'
+requests carry the same platform signature. Blocking that signature would
+interrupt both tenants. The origin needs to bound A's consumption and stop
+abusive requests without requiring either tenant to disclose a stable
+identifier.
+
+Suppose the platform also acts as an Anchor accepted by the origin. It grants
+at most two Endorsements per tenant per epoch. Each Endorsement can be redeemed
+once at this Moderator for an EC-ACT Credential with ten credits. The Moderator
+charges one credit per accepted operation attempt and returns an updated
+Credential with the remaining balance. It returns no credits and offers no
+top-ups. Credentials expire at the epoch boundary.
+
+Each tenant's allocation therefore permits at most twenty budgeted operation
+attempts in the epoch. Starting another task does not reset the allowance.
+This bound depends on the Anchor enforcing the allocation and on other
+accepted Anchors not supplying additional budgets. The origin verifies each
+spend without learning which tenant's allocation it consumes.
+
+If the origin detects abuse on A's presented request, its Moderator can record
+NoUpdate and end that credential chain. The chain is the sequence of
+Credentials obtained by updating one initial Credential. Its remaining credits
+are forfeited. B's independently allocated Credentials remain usable.
+{{fig-budget-ban}} shows this decision. The tenant labels explain the example
+and are not identifiers carried in presentations.
+
+~~~aasvg
++-----------------------------------------------------------+
+|                 Platform acting as Anchor                 |
+|           At most two Endorsements per tenant             |
++-------------+-------------------------------+-------------+
+              |                               |
+              v                               v
++---------------------------+   +---------------------------+
+|         Tenant A          |   |         Tenant B          |
+|    Two 10-credit budgets  |   |    Two 10-credit budgets  |
++-------------+-------------+   +-------------+-------------+
+              |                               |
+       Abusive request                 Allowed request
+       + presentation                  + presentation
+              |                               |
+              v                               v
++-----------------------------------------------------------+
+|                   Origin and Moderator                    |
+|          Both requests carry the platform signature       |
+|          Each presentation spends a separate budget       |
++-------------+-------------------------------+-------------+
+              |                               |
+          NoUpdate                      Update (t=0)
+              |                               |
+              v                               v
++---------------------------+   +---------------------------+
+|   Presented chain ends    |   |      Chain continues      |
+|   Remaining credits lost  |   |      One credit spent     |
++---------------------------+   +---------------------------+
+~~~
+{: #fig-budget-ban title="Ending an abusive chain while an independent budget remains usable"}
+
+This ban applies to the presented chain. It does not revoke A's other
+Credential or prevent A from obtaining a later allocation. A replacement must
+count against the tenant's allowance. Exhaustion also prevents further spending
+from a budget, but an update returning zero credits does not end a chain that
+still has a sufficient balance. Neither a task boundary nor a tenant boundary
+is established by the presentation itself.
+
+The platform's aggregate limit and the origin's available capacity still apply
+to both tenants. Public-baseline requests are outside the illustrated budget.
+Missing budget evidence does not itself establish abuse.
+
+For the origin to ask the platform to investigate a tenant or change its future
+allocations, they need a feedback arrangement. One possible extension would
+require a fresh platform Endorsement before accepting an origin-issued
+Privacy Pass token, using a reverse-flow exchange. Feedback could also occur out of band. These
+are possible deployment arrangements, not exchanges specified by AAA. Their
+binding to the affected allocation, enforcement, and disclosure to each party
+remain to be defined. They need not require a persistent tenant identifier at
+the origin.
+
 ## Related work
 
 {{SIGNED-AGENT-METADATA}} addresses shared fate under a platform's Web Bot
 Auth signature with signed, pseudonymous sub-identifiers. It lets an origin
 apply policy to a product, project, or session while the platform can map
 those identifiers back to its customers. Origin-scoped session values
-reduce cross-origin correlation ({{Section 7.2 of SIGNED-AGENT-METADATA}}),
-but each identifier still links requests within its own scope and lifetime.
-MOLE serves the case where the origin needs a scarce budget without such a
-handle; it does not provide the same tenant-specific abuse reporting or
-targeted blocking of an identified project.
+reduce cross-origin correlation ({{Section 7.2 of SIGNED-AGENT-METADATA}}). However,
+each identifier still links requests within its own scope and lifetime.
+As described in {{scenarios}}, AAA does not specify tenant-specific abuse
+reporting.
+An Anchor can constrain project allocations, but the origin cannot recognize
+and selectively block all of a project's independent Credentials from their
+presentations alone.
 
 {{WBA-ABA}} also uses MOLE for anonymous bot access and rate limiting.
-This document focuses on the shared-fate problem beneath a platform's
-{{WBA-HTTPSIG}} identity: scarce budgets can isolate consumption without
-asking the platform to expose product, project, or session identifiers for
-that purpose. It does not replace signed metadata where the origin needs
-to attribute activity to one of those units.
+Its deployment relies on Anchor vetting and origin acceptance of issuance
+policies ({{Sections 3 and 4.1 of WBA-ABA}}). It also discusses convergence on
+accepted policies ({{Section 4.3 of WBA-ABA}}) and the risk of cheap registration
+yielding multiple credentials ({{Section 8.2 of WBA-ABA}}). These are governance
+dependencies between Anchors and sites. AAA shares those dependencies and
+focuses on allocations beneath a platform's identity, where the platform can
+use its existing tenant relationships to constrain new budgets.
+
+Given both AAA and ABA rely on MOLE, should ABA see traction, platforms
+supporting AAA could use MOLE's issuer-hiding capability to form virtual
+platforms: groups of platform Anchors accepted under a common policy. An origin
+would learn that an Endorsement came from an accepted Anchor without learning
+which platform issued it. Moving away from platform-specific identifiers would
+also require origins to accept requests without a platform-specific signature.
+Network metadata and other request fields could still reveal the platform.
+This is a possible deployment direction, not a mechanism specified by AAA.
 
 Poppy {{POPPY}} uses User IDs and sessions, including for anonymous browsing.
 {{AAP}} uses anonymous admission tokens and recommends a session afterwards,
 though it also allows a fresh token per request. Here, the aim is to maintain a
 scarce, independently allocated budget without linking its presentations.
 
-{{WIMSE-AIMS}} profiles WIMSE and OAuth for agents. It treats an agent as a
-workload with its own identifier and credential, and carries the user, when
-there is one, only as the subject of an OAuth access token, so that the two
+{{WIMSE-AIMS}} profiles WIMSE and OAuth for agents within a defined trust domain.
+It treats an agent as a workload with its own identifier and credential. It
+carries the user, when there is one, only as the subject of an OAuth access token, so that the two
 identities are separate and compose on one request. {{WAG}} lets a
 platform-hosted workload obtain such a token for itself without per-workload
 registration. This document places both among the options an origin can ask
@@ -207,22 +306,22 @@ for, next to attribution and anonymous capacity.
 This document uses the HTTP terminology of {{HTTP}} and the MOLE terminology
 of {{MOLE-ARCH}}. The roles can be operated by separate parties or combined.
 
-Client:
+**Client:**
 : The MOLE participant that obtains an Endorsement, redeems it for a
   Credential, and presents that Credential when requesting a resource.
 
-Anchor:
+**Anchor:**
 : The party that grants Endorsements under a policy the Moderator accepts.
   Its relationship with a Client constrains access to new budgets.
 
-Moderator:
+**Moderator:**
 : The party that issues Credentials and verifies their presentations. It
   sets the budget policy and may be operated by the origin or on its behalf.
 
-Origin:
+**Origin:**
 : The server that controls access to the requested resource.
 
-Intermediary:
+**Intermediary:**
 : A proxy, gateway, or tunnel on the request path. An intermediary that
   terminates HTTP can sign forwarded requests under its own identity.
 
@@ -310,7 +409,9 @@ authorization protocol with its own challenges and credentials.
 
 ## Capacity
 
-MOLE credentials hold a hidden balance c. A presentation proves that it
+The budget flow uses the EC-ACT credential type of {{MOLE-PROTOCOLS}}.
+Other MOLE credential types can have different properties.
+An EC-ACT Credential holds a hidden balance c. A presentation proves that it
 covers a requested spend s. The moderator can return an amount t, bounded by
 s plus the offered top-up a. The replacement credential holds c - s + t.
 The origin learns the public amounts and that the spend was possible, without
@@ -337,8 +438,8 @@ of several budgets or of a budget beside another authorization scheme remains
 undefined here.
 
 WWW-Authenticate can carry several challenges, but that alone does not express
-that all must be satisfied. Signaling cumulative requirements is also open;
-this document does not specify the permissioned flow or its encoding.
+that all must be satisfied. Signaling cumulative requirements is also open.
+This document does not specify the permissioned flow or its encoding.
 
 # Moderating consumption {#processing-steps}
 
@@ -353,7 +454,10 @@ A MOLE redemption challenge lets a client obtain a credential. A presentation
 challenge specifies its spending terms. Clients use the exchanges and
 verification rules of {{MOLE-PROTOCOLS}} and {{MOLE-HTTP}}, including replay
 checks and request binding. A failed proof supplies no evidence of budget.
-A refund replaces the spent Credential with an updated one.
+A refund replaces the spent Credential with an updated one. Returning zero
+credits leaves c - s credits. Recording NoUpdate ends the chain, as illustrated
+in {{scenarios}}. The Moderator records this decision before attempting the
+operation, using the evidence available at that point.
 
 After a lost response, the Client can recover the recorded credential result
 within the retention period. Recovery does not repeat the protected operation
@@ -459,7 +563,7 @@ Signed product, project, and session IDs give an origin visible keys with which
 to keep separate counters {{SIGNED-AGENT-METADATA}}. For capacity alone, the
 Anchor can constrain Endorsements per product, project, or task allocation
 only if it knows and enforces those boundaries. The platform can play this
-role; an independent Anchor needs a way to account for the same allocations,
+role. An independent Anchor needs a way to account for the same allocations,
 or its Endorsements cannot enforce the platform's project and product totals.
 
 Clients redeem those endorsements for independent MOLE credentials and
@@ -470,7 +574,7 @@ product, project, task, or Client holds a particular budget.
 
 The platform can still sign WBA(P), so the origin can also limit its traffic in aggregate.
 Credential contexts and spending terms should be shared across many
-endorsements; unique contexts or amounts would distinguish those units and
+endorsements. Unique contexts or amounts would distinguish those units and
 shrink their anonymity sets.
 
 The allocation boundary can be chosen without adding a corresponding ID to
@@ -494,21 +598,15 @@ requests:
   tasks: a MOLE presentation does not prove which task is using a Credential.
   Alternatively, a Client can spend the same Credential across tasks when
   task-specific budgets are unnecessary. Neither choice lets the origin link
-  requests as one task; that requires a session identifier if the origin
-  needs it.
+  requests as one task. Such correlation requires an additional mechanism.
 
-For example, suppose an Anchor grants at most two Endorsements per project
-per epoch and the Moderator issues each Credential with ten credits. If
-each accepted request spends one credit, with no refund or top-up, and the
-Credentials expire at the epoch boundary, that project's endorsements permit
-at most twenty budgeted requests in the epoch. The origin verifies the
-ten-credit limit on each Credential; the twenty-request total holds only if
-the Anchor actually issues no more than two Endorsements for that project
-and no other accepted Anchor supplies additional ones.
+The example in {{scenarios}} bounds a tenant's total allocation while the
+origin checks each Credential separately. Applying that policy to a project
+requires the Anchor to account for all allocations to that project.
 
 The Anchor can also cap the sum of Endorsements across projects belonging
 to one product. The origin enforces each Credential's ten-credit limit
-without seeing the project or product; the project and product totals depend
+without seeing the project or product. The project and product totals depend
 on the Anchor's issuance policy, not on an origin-side counter keyed by an ID.
 Additional accepted Anchors or Endorsements increase the available budget
 unless their policies constrain the combined allocation. Public-baseline
