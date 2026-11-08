@@ -1,9 +1,9 @@
 ---
-title: "Capacity Budget for Agents"
-abbrev: "Capacity Budget for Agents"
+title: "Capacity Management for Agents"
+abbrev: "CMA"
 category: info
 
-docname: draft-meunier-webbotauth-capacity-budget-latest
+docname: draft-meunier-webbotauth-cma-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -19,7 +19,7 @@ venue:
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-brian"
-  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-capacity-budget.html"
+  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-cma.html"
 
 author:
  -
