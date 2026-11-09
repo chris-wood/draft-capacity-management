@@ -1,9 +1,9 @@
 ---
-title: "Capacity Management for Agents"
-abbrev: "CMA"
+title: "PACE: Capability Management for Agents"
+abbrev: "PACE"
 category: info
 
-docname: draft-meunier-webbotauth-cma-latest
+docname: draft-meunier-webbotauth-capacity-management-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -19,7 +19,7 @@ venue:
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
   github: "thibmeu/draft-capacity-management"
-  latest: "https://thibmeu.github.io/draft-capacity-management/draft-meunier-webbotauth-cma.html"
+  latest: "https://thibmeu.github.io/draft-capacity-management/draft-meunier-webbotauth-capacity-management.html"
 
 author:
  -
