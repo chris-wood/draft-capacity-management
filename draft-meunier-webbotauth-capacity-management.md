@@ -102,14 +102,14 @@ allocate capacity among clients.
 Historically, most of these signals have been enshrined into deployments of
 internet protocols. An agent needs an IP address to receive a response from an
 origin. Its TLS stack and browser behavior provide further signals. It provides
-a familiar User-Agent because middleboxes might otherwise filter its traffic
+a familiar `User-Agent` because middleboxes might otherwise filter its traffic
 (see {{USER-AGENT-HISTORY}}).
 
 Recent developments break these patterns. Agents use proxies
 ({{CONNECT-UDP}}, {{CONNECT-IP}}, {{OHTTP}}, or plain {{HTTP}}).
 As platforms make requests on behalf of users, the user's TLS stack may no
 longer be the one visible to the origin. AI agents, on the user's device or
-hosted remotely, fetch and render information in place of browsers. User-Agent
+hosted remotely, fetch and render information in place of browsers. `User-Agent`
 strings are still spoofed.
 
 An address, including an {{IPv6}} address, is not necessarily a user. Blocking
@@ -147,13 +147,14 @@ has to be able to apply policies to traffic whether it finds it abusive or
 acceptable. Bounding consumption does not always require more fine-grained
 identifiers.
 
-This document describes capacity budgets for agents using MOLE,
-an architecture for private moderation {{MOLE-ARCH}}. Separately allocated
-budgets let the origin charge one Client's requests without consuming
-another's allocation. MOLE alone does not ensure one budget per agent or
-enforce a per-agent rate over time. The draft describes how Clients obtain
-Endorsements and Credentials, and how Anchor issuance and Moderator spending
-policies constrain those budgets.
+This document describes capacity budgets for agents using MOLE, an architecture
+for private moderation {{MOLE-ARCH}}. Separately allocated budgets let the origin
+charge one Client's requests without consuming another's allocation. A given
+tenant is rate limited by the combination of Anchor issuance and Moderator
+spending policies. For example, {{scenarios}} limits each tenant to twenty
+budgeted operation attempts per epoch without revealing which tenant made a
+request. MOLE itself does not define tenant rate limits; the profile defined in
+this document provides them through these policies.
 
 Avoiding unnecessary disclosure supports the end-user interests discussed in
 {{INTERNET-FOR-END-USER}}. For these capacity decisions, the origin need not
@@ -292,8 +293,8 @@ use HTTP Message Signatures {{HTTPSIG}}. A session identifier allows requests
 to be correlated within the session. Either form of attribution can accompany
 a budget, with the resulting loss of unlinkability within its scope.
 
-An origin can request a signature with Accept-Signature. The Client may decline,
-and the origin may refuse access where its policy requires a signature.
+An origin can request a signature with `Accept-Signature`. The Client may
+decline, and the origin may refuse access where its policy requires a signature.
 The public baseline in {{principles}} is this deployment's goal, not a
 requirement imposed by Web Bot Auth.
 
@@ -320,17 +321,18 @@ authorization protocol with its own challenges and credentials.
 
 The budget flow uses the EC-ACT credential type of {{MOLE-PROTOCOLS}}.
 Other MOLE credential types can have different properties.
-An EC-ACT Credential holds a hidden balance c. A presentation proves that it
-covers a requested spend s. The moderator can return an amount t, bounded by
-s plus the offered top-up a. The replacement credential holds c - s + t.
+An EC-ACT Credential holds a hidden balance `c`. A presentation proves that it
+covers a requested spend `s`. The moderator can return an amount `t`, bounded by
+`s` plus the offered top-up `a`. The replacement credential holds `c - s + t`.
 The origin learns the public amounts and that the spend was possible, without
 learning the balance or a stable client identifier {{MOLE-PROTOCOLS}}.
 
-For example, a policy can issue B credits, charge one per accepted presentation,
-and return zero with no top-ups. Each issuance then allows at most B fresh
-accepted operation attempts. Further issuances increase that allocation.
-Bounding consumption over time also requires policy for replenishment and
-expiry. Refunding every spend in full leaves successful consumption unbounded.
+For example, a policy can issue `B` credits, charge one per accepted
+presentation, and return zero with no top-ups. Each issuance then allows at most
+`B` fresh accepted operation attempts. Further issuances increase that
+allocation. Bounding consumption over time also requires policy for replenishment
+and expiry. Refunding every spend in full leaves successful consumption
+unbounded.
 
 ## Composition {#composition}
 
@@ -339,16 +341,28 @@ signature should cover the presentation and the relevant request components,
 as discussed in {{security}}. Multiple signature profiles can use distinct
 labels, with each verifier applying the corresponding profile.
 
-Permission and capacity can also be required together. However, MOLE,
-PrivateToken, and OAuth bearer tokens {{BEARER}} use the Authorization field,
-which carries one credentials value {{Section 11.6.2 of HTTP}}. The current MOLE
-transport also selects one presentation per request {{MOLE-HTTP}}. Carriage
-of several budgets or of a budget beside another authorization scheme remains
-undefined here.
+An origin might require both an access token granting permission to use a
+resource and a MOLE presentation showing sufficient capacity. MOLE, PrivateToken,
+and OAuth bearer tokens {{BEARER}} use the `Authorization` field, which carries
+one credentials value {{Section 11.6.2 of HTTP}}. `WWW-Authenticate` can carry
+several challenges {{Section 11.6.1 of HTTP}}, but does not express that all must
+be satisfied.
 
-WWW-Authenticate can carry several challenges, but that alone does not express
-that all must be satisfied. Signaling cumulative requirements is also open.
-This document does not specify the permissioned flow or its encoding.
+The following illustrates the limitation; challenge parameters and credential
+values are omitted:
+
+~~~
+Server response: two challenges
+WWW-Authenticate: Bearer ..., Mole ...
+
+Client request: one credentials value
+Authorization: Bearer ...
+~~~
+
+The current MOLE transport also selects one presentation per request
+{{MOLE-HTTP}}. Carriage of several budgets or of a budget beside another
+authorization scheme, and signaling cumulative requirements, remain undefined
+here.
 
 # Moderating consumption {#processing-steps}
 
@@ -362,10 +376,10 @@ operation and challenge for the missing authorization.
 A MOLE redemption challenge lets a client obtain a credential. A presentation
 challenge specifies its spending terms. Clients use the exchanges and
 verification rules of {{MOLE-PROTOCOLS}} and {{MOLE-HTTP}}, including replay
-checks and request binding. A failed proof supplies no evidence of budget.
-A refund replaces the spent Credential with an updated one. Returning zero
-credits leaves c - s credits. Recording NoUpdate ends the chain, as illustrated
-in {{scenarios}}. The Moderator records this decision before attempting the
+checks and request binding. A failed proof supplies no evidence of budget. A
+refund replaces the spent Credential with an updated one. Returning zero credits
+leaves `c - s` credits. Recording `NoUpdate` ends the chain, as illustrated in
+{{scenarios}}. The Moderator records this decision before attempting the
 operation, using the evidence available at that point.
 
 After a lost response, the Client can recover the recorded credential result
@@ -424,11 +438,11 @@ The Moderator is shown at the origin.
    challenges on the 200 response. A Client with a suitable Credential skips
    redemption. Otherwise, it fetches the Moderator configuration and redeems
    its Endorsement at the Redeem & Issue endpoint.
-3. The Client presents proof that its balance covers s and requests a top-up
-   of at most a. The Moderator verifies and records the spend result atomically
+3. The Client presents proof that its balance covers `s` and requests a top-up
+   of at most `a`. The Moderator verifies and records the spend result atomically
    before attempting the operation.
-4. The response returns an Update with 0 <= t <= s + a, continuing the chain
-   with balance c - s + t. Each subsequent spend answers an applicable
+4. The response returns an Update with `0 <= t <= s + a`, continuing the chain
+   with balance `c - s + t`. Each subsequent spend answers an applicable
    challenge and uses a fresh nullifier, without a credential link to the
    previous presentation.
 
@@ -452,6 +466,11 @@ charges one credit per accepted operation attempt and returns an updated
 Credential with the remaining balance. It returns no credits and offers no
 top-ups. Credentials expire at the epoch boundary.
 
+In this scenario, credits represent capacity granted by the Moderator under its
+own access policy. Twenty credits correspond to the capacity allocated to a
+tenant per epoch. A system based on fingerprints might instead apply a rate limit
+per IP address, `User-Agent`, or TLS fingerprint.
+
 Each tenant's allocation therefore permits at most twenty budgeted operation
 attempts in the epoch. Starting another task does not reset the allowance.
 This bound depends on the Anchor enforcing the allocation and on other
@@ -459,11 +478,11 @@ accepted Anchors not supplying additional budgets. The origin verifies each
 spend without learning which tenant's allocation it consumes.
 
 If the origin detects abuse on A's presented request, its Moderator can record
-NoUpdate and end that credential chain. The chain is the sequence of
+`NoUpdate` and end that credential chain. The chain is the sequence of
 Credentials obtained by updating one initial Credential. Its remaining credits
 are forfeited. B's independently allocated Credentials remain usable.
-{{fig-budget-ban}} shows this decision. The tenant labels explain the example
-and are not identifiers carried in presentations.
+{{fig-budget-ban}} shows this decision. The tenant labels explain the example and
+are not identifiers carried in presentations.
 
 ~~~aasvg
 +-----------------------------------------------------------+
@@ -702,7 +721,7 @@ Sender-constrained access tokens limit reuse of stolen tokens, but DPoP does
 not protect the request body {{DPOP}}. Mutual TLS authenticates the connection
 at its TLS endpoint {{MTLS}}, which may be an intermediary. Application-layer
 signatures can preserve integrity across TLS termination {{WIMSE-AIMS}}.
-For signed HTTP content, the verifier checks Content-Digest against the
+For signed HTTP content, the verifier checks `Content-Digest` against the
 received content and verifies a signature covering it, together with the
 other components needed to bind the operation {{HTTPSIG}} {{DIGEST}}.
 
