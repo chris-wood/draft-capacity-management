@@ -148,10 +148,12 @@ acceptable. Bounding consumption does not always require more fine-grained
 identifiers.
 
 This document describes capacity budgets for agents using MOLE, an architecture
-for private moderation {{MOLE-ARCH}}. Separately allocated budgets let the origin
-charge one Client's requests without consuming another's allocation. A given
-tenant is rate limited by the combination of Anchor issuance and Moderator
-spending policies. For example, {{scenarios}} limits each tenant to twenty
+for private moderation {{MOLE-ARCH}}. An Anchor allocates budgets to tenants,
+workloads, agents, or user accounts. MOLE Clients obtain and spend those budgets
+({{parties}}). Separately allocated budgets let the origin charge one allocation
+without consuming another. Anchor issuance and Moderator spending policies
+together constrain consumption at the chosen scope.
+For example, {{scenarios}} limits each tenant to twenty
 budgeted operation attempts per epoch without revealing which tenant made a
 request. MOLE itself does not define tenant rate limits; the profile defined in
 this document provides them through these policies.
@@ -216,9 +218,45 @@ for, next to attribution and anonymous capacity.
 This document uses the HTTP terminology of {{HTTP}} and the MOLE terminology
 of {{MOLE-ARCH}}. The roles can be operated by separate parties or combined.
 
+## Parties and hosting relationships {#parties}
+
+**Platform:**
+: A service that hosts workloads for tenants.
+
+**Tenant:**
+: A customer organization, developer account, or billing workspace that runs
+  workloads on a platform, often organized as a project.
+
+**Workload:**
+: A deployed application or service, as described in {{WIMSE-ARCH}}.
+  A software product or service can comprise several workloads.
+
+**Agent:**
+: Software that performs tasks, potentially on behalf of a user.
+  A session is a bounded task execution or workflow run, not the agent itself.
+
+**User:**
+: A person on whose behalf an agent may act.
+
+A typical hosted deployment has this hierarchy:
+
+~~~
+Platform
+  Tenant
+    Workload
+      Agent
+~~~
+
+A tenant runs workloads that execute agents. Users can use several agents,
+and agents can serve several users or run unattended. Device-resident agents
+need no hosting tenant.
+
+## MOLE roles and budget scopes
+
 **Client:**
 : The MOLE participant that obtains an Endorsement, redeems it for a
   Credential, and presents that Credential when requesting a resource.
+  An agent or a shared workload component can implement this protocol role.
 
 **Anchor:**
 : The party that grants Endorsements under a policy the Moderator accepts.
@@ -237,13 +275,31 @@ of {{MOLE-ARCH}}. The roles can be operated by separate parties or combined.
 
 A Client may hold several budgets, and an account or workload may receive
 budgets for several Clients. Those allocations depend on Anchor and Moderator
-policy. A workload has the meaning given in {{WIMSE-ARCH}}. A Credential does
-not establish a unique account, workload, device, or other principal.
+policy. A Credential does not establish a unique account, workload, device,
+or other principal.
 
 MOLE(X) denotes a presentation for budget scope X. MOLE(C) is a Client's
 budget, while MOLE(T), MOLE(W), and MOLE(U) denote tenant, workload, and
 account scopes. These labels do not appear as identifiers in presentations.
 WBA(Y) denotes a Web Bot Auth signature from intermediary Y.
+
+## Endorsement examples {#endorsement-examples}
+
+An accepted Anchor could allocate Endorsements at each scope:
+
+* Platform: A vetting service grants a hosting provider a finite pool.
+* Tenant: The platform caps a retailer's workspace allocation under its
+  subscription, as in {{scenarios}}.
+* Workload: A deployment service authenticates the shopping-assistant workload
+  and caps its allocation across replicas and restarts.
+* Agent: The workload operator allocates a shopping agent's task budget
+  against the workload's allowance. New tasks do not reset that allowance.
+* User: An account provider authenticates a customer and caps allocations
+  across that account's agents. This limits accounts, not unique people.
+
+Clients redeem these Endorsements for Credentials. The Anchor accounts for the
+allocation scope, which presentations do not reveal. Capacity evidence does
+not grant permission. Combining budget proofs remains undefined ({{composition}}).
 
 # Scope and principles {#principles}
 
@@ -629,17 +685,19 @@ metadata can accompany MOLE, making requests linkable at the metadata's scope.
 
 ## Capacity scopes
 
-A platform P can host tenants T, each with workloads W serving several
-Clients. An account U may authorize several Clients. The noisy-neighbour
+Using the terms in {{parties}}, a platform P hosts tenants T with workloads W.
+An account U may authorize several agents. {{endorsement-examples}} describes
+allocations at these scopes. The noisy-neighbour
 boundary depends on which of these shares a budget. A tenant budget separates
 tenants but leaves workloads within a tenant sharing its allocation. A
 workload budget separates workloads but still groups their Clients. Account
 budgets can isolate those allocations further, while several Clients sharing
 one account budget remain subject to the same limit.
 
-In {{fig-stacked}}, Anchor W endorses a workload and Anchor U endorses account
-allocations. The workload and its Clients play separate MOLE roles. The
-request carries their budget proofs alongside the platform's signature.
+In {{fig-stacked}}, Anchor W endorses workload-scoped allocations and Anchor U
+endorses account-scoped allocations. Client components obtain and spend the
+corresponding Credentials. The request carries both budget proofs alongside
+the platform's signature.
 The Anchors need not operate the forwarding intermediary. These are intended
 scopes, pending the multiple-presentation carriage in {{composition}}.
 
