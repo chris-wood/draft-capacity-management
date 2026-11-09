@@ -1,4 +1,4 @@
 # License
 
 See the
-[guidelines for contributions](https://github.com/thibmeu/draft-brian/blob//CONTRIBUTING.md).
+[guidelines for contributions](https://github.com/thibmeu/draft-capacity-management/blob/main/CONTRIBUTING.md).

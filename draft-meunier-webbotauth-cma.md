@@ -18,8 +18,8 @@ venue:
 #  type: "Working Group"
 #  mail: "web-bot-auth@ietf.org"
 #  arch: "https://mailarchive.ietf.org/arch/browse/web-bot-auth/"
-  github: "thibmeu/draft-brian"
-  latest: "https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-cma.html"
+  github: "thibmeu/draft-capacity-management"
+  latest: "https://thibmeu.github.io/draft-capacity-management/draft-meunier-webbotauth-cma.html"
 
 author:
  -

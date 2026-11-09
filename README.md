@@ -6,7 +6,7 @@ Working draft of a MoLE-based approach to limiting clients behind shared
 intermediaries without requiring stable client identifiers at origins.
 This is an unpublished editor's copy being developed toward an individual -00.
 
-- [Editor's copy](https://thibmeu.github.io/draft-brian/draft-meunier-webbotauth-cma.html)
+- [Editor's copy](https://thibmeu.github.io/draft-capacity-management/draft-meunier-webbotauth-cma.html)
 - [Contributing](CONTRIBUTING.md)
 - [Draft source](draft-meunier-webbotauth-cma.md)
 
