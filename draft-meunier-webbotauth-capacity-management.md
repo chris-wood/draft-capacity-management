@@ -83,8 +83,8 @@ This document addresses the noisy neighbour problem without requiring a
 stable client identifier at the origin. Separately allocated budgets let
 origins limit consumption beneath a shared platform identity. It describes
 PACE: a framework for managing budget continuity across requests using
-a composition of the Web Bot Auth the Moderation of unLinkable Endorsements
-(MOLE) architecture and protocols {{MOLE-ARCH}}. This composition allows for
+a composition of the Web Bot Auth with the Moderation of unLinkable Endorsements
+(MOLE) architecture {{MOLE-ARCH}} and protocols {{MOLE-PROTOCOLS}}. This composition allows for
 per-client capacity management in a way that allows origins to serve clients
 above an otherwise constrained public baseline.
 
@@ -399,7 +399,9 @@ request. An origin might also require both a workload authorization token granti
 permission to use a resource and a MOLE presentation for the user behind that workload.
 Origins decide what composition is essential based on their needs.
 
-[[OPEN ISSUE: Authorization does not compose in practice. It's not possible to send an OAuth bearer token and MOLE presentation in the same request. This needs to be addressed in MOLE.]]
+Carriage of a MOLE presentation alongside another authorization scheme or
+additional budget presentations, and signaling cumulative requirements, remain
+undefined here (see [issue #9](https://github.com/thibmeu/draft-capacity-management/issues/9)).
 
 # Moderating consumption {#processing-steps}
 
@@ -417,7 +419,7 @@ challenge specifies its spending terms. Clients use the exchanges and
 verification rules of {{MOLE-PROTOCOLS}} and {{MOLE-HTTP}}, including replay
 checks and request binding. A failed proof supplies no evidence of budget. A
 refund replaces the spent Credential with an updated one. Returning zero credits
-depletes the budget. Recording `NoUpdate` ends the chain, as illustrated in
+leaves `c - s` credits. Recording `NoUpdate` ends the chain, as illustrated in
 {{scenarios}}. The Moderator records this decision before attempting the
 operation, using the evidence available at that point.
 
